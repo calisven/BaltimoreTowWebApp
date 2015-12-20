@@ -1,8 +1,13 @@
 Steps to deploy
 
+
+
 Restore Mongo Collection
 
-1. On the terminal, run 'mongorestore —collection test —db NAMEOFDATABASE PATH_TO_BSON/cars.bson'
+1. On the terminal, navigate to 'PROJECT_ROOT/dump/test/'.
+2. This location has the 'cars.bson' file needed to import the mongodb needed to pull data to the
+   website.
+2. On the terminal, run 'mongorestore —collection test —db NAMEOFDATABASE PATH_TO_BSON/cars.bson'
 
 Validate Collection Was Imported
 
@@ -20,3 +25,5 @@ in the Tomcat 'webapps' folder (should auto-deploy). However, you may use any de
 of your choosing. After deploying the website, open a browser and navigate to
 ‘http://localhost:8080/CSWebProject/#/'. 
 
+You may also simply import the .war file in Eclipse (with the Tomcat 7.0 plugin installed) then 
+right-click the imported projected --> Run As --> Run On Server
