@@ -1,0 +1,80 @@
+<div id="page-wrapper" ng-init="doWork()">
+            <div class="row">
+                <div class="col-lg-12">
+                    <h1 class="page-header">City of Baltimore</h1>
+                    <h2 ng-if="drawCharts == true">Vehicle Tow Database Visualizations</h2>
+                    <h2 ng-if="drawCharts == false">Loading data<blink>...</blink></h2>
+                </div>
+                <!-- /.col-lg-12 -->
+            </div>
+           <select class="btn btn-default btn-sm" ng-options="yearChart for yearChart in charts" ng-model="yearChart" ng-change="changeChart()"></select>
+               <div ng-if="drawCharts == true" data-ac-chart="'bar'" data-ac-data="data" data-ac-config="config" id='chart' class='chart' ></div>   		
+            <!-- /.row -->
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Vehicle Totals
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div ng-if="drawCharts == true" data-ac-chart="'pie'" data-ac-data="dataTotalsPie" data-ac-config="configTotalsPie" id='circleTotalsPie' class='pie'></div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+                <!-- /.col-lg-6 -->
+                <div class="col-lg-6">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Vehicles Stolen
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <select class="btn btn-default btn-sm" ng-options="yearStolenChart for yearStolenChart in stolenCharts" ng-model="yearStolenChart" ng-change="changeStolenPie()"></select>
+                            <div ng-if="drawCharts == true" data-ac-chart="'pie'" data-ac-data="dataStolenPie" data-ac-config="configStolenPie" id='circleStolenPie' class='pie'></div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+                <!-- /.col-lg-6 -->
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Tow Charges
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div ng-if="drawCharts == true" data-ac-chart="'area'" data-ac-data="dataAverageCharge" 
+                            data-ac-config="configTotalPaid" id='chartAvg' class='chart'></div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+                <div class="col-lg-12">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            Vehicle Tow Search
+                        </div>
+                        <!-- /.panel-heading -->
+                        <div class="panel-body">
+                            <div ng-if="drawCharts == true" data-ac-chart="'line'" data-ac-data="dataVehicleSearch" data-ac-config="configVehicleSearch" id='chartDataSearch' class='chart'></div>
+                            <div class="btn-group">
+							<label>Make</label><input type="text" ng-model="make" placeholder="Ford"  value="Bob"> <!-- ng-init="rootFolders='Bob'" -->
+							<label>Model</label><input type="text" ng-model="model" placeholder="Focus" value="Bob">
+							<button type="submit" class="btn btn-primary btn-xs" ng-click="submitVehicle()">Get Data</button>
+							<p><small>Search for a specific vehicle make and model. The model is <b>optional.</b></small></p>
+                            </div>
+                        </div>
+                        <!-- /.panel-body -->
+                    </div>
+                    <!-- /.panel -->
+                </div>
+                <!-- /.col-lg-6 -->
+            </div>
+            <!-- /.row -->
+        </div>
+        <!-- /#page-wrapper -->
