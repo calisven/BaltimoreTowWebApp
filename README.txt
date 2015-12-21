@@ -1,13 +1,25 @@
 Steps to deploy
 
+MongoDB Installation (OSX):
 
+1. Follow the instructions found here exactly: http://www.mkyong.com/mongodb/how-to-install-mongodb-on-mac-os-x/
+   The version shown in those instructions is old; replace the mongo version you download in the command line steps from
+   the instructions to have it work properly.
 
 Restore Mongo Collection
 
-1. On the terminal, navigate to 'PROJECT_ROOT/dump/test/'.
+1. On the terminal, navigate to 'PROJECT_ROOT/dump'.
 2. This location has the 'cars.bson' file needed to import the mongodb needed to pull data to the
    website.
-2. On the terminal, run 'mongorestore —collection test —db NAMEOFDATABASE PATH_TO_BSON/cars.bson'
+3. On a separate terminal tab, run 'mongod' to start the MongoDB server
+4. NOTE: Replace the '--db test' with any database name you wish to use. 
+   On the terminal, run 'mongorestore --db test --drop dump/test/'
+5. After a few moments, you should see:
+   "...
+   2015-12-21T17:41:24.224-0500	finished restoring test.cars (62158 documents)
+   2015-12-21T17:41:24.225-0500	done"
+6. The database is not imported. 
+
 
 Validate Collection Was Imported
 
