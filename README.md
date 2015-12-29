@@ -59,8 +59,7 @@ mongorestore --db test --drop dump/test/
 
 <h2> Install Tomcat 7</h2>
 <ul>
-<a href="http://tomcat.apache.org/download-70.cgi"><p> 
-<li>Navigate to http://tomcat.apache.org/download-70.cgi.</li>
+<li>Navigate to <a href="http://tomcat.apache.org/download-70.cgi"> http://tomcat.apache.org/download-70.cgi.</a></li>
 <li>Under 'Binary Distributions', select the 'tag.gz' download link.</li>
 <li>Go the file's download location and un-zip the file.</li>
 <li>Rename the file to 'Tomcat' for ease of use.</li>
