@@ -95,3 +95,33 @@ chmod +x *
 </code></pre>
 
 <a href="http://localhost:8080/CSWebProject/#/"> <p>Go to http://localhost:8080/CSWebProject/#/.</p></a>
+
+<h1> Miscellaneous </h1>
+
+<p>The steps below assume the user has Eclipse installed along with the Maven Eclipse plugin. Though these steps can be done manually, using Eclipse makes this process significantly easier.  You may download Eclipse at <a href="http://www.eclipse.org/downloads/packages/eclipse-ide-java-ee-developers/mars1">this location.</a> This will include everything needed to run a web project out of the box, along with the Maven integration.</p>
+
+<h3>Importing the Project into Eclipse</h3>
+<ol>
+<li>In Eclipse, select File --> Import...</li>
+<li>A dialog menu will appear. Select General --> Existing Projects into Workspace</li>
+<li>Click 'Browse..' under 'select root directory'</li>
+<li>In the newly opened file explorer, locate the location of the project, then find the folder containing the hidden '.project' file. In this case, it will be located in the 'BaltimoreTowWebApp' folder. Click 'Open' after locating it.
+<li>Click 'Finish'. The project will now be imported.</li>
+</ol>
+
+<h3>Manually Generating a '.war' File</h3>
+
+<p> A '.war' file can be manually generated, which can be dropped in the 'webapps' folder in Tomcat. This is required if you have made any local changes to the project that you wish to deploy.</p>
+<ol>
+<li>Import the project in Eclipse (see above)</li>
+<li>Ensure that the project is selected in Eclipse</li>
+<li>Go to File --> Export --> Web --> WAR file </li>
+<li>In the next menu, select the destination folder. The destination folder should be the location of your Tomcat installation, in the 'webapps' folder. Select 'Finish'.</li>
+<li>The '.war' file is now ready to deploy. Open the Terminal and go to the Tomcat installation location, then the 'bin' location. Run './startup.sh'.</li>
+<li>Go to<a href="http://localhost:8080/CSWebProject/#/"> http://localhost:8080/CSWebProject/#/.</a></li>
+</ol>
+
+<h3> Running the Project's Test Suite </h3>
+
+<p>If you wish to run the project's Test Suite manually, open Eclipse and import the project. After importing the project, right click the project and select 
+Run As --> JUnit Test.</p>
