@@ -25,17 +25,15 @@ import greatSuccess.DatabaseSingleton;
 import greatSuccess.HelperClass;
 
 
-@Path("/")
+@Path("")
 public class DataRestService {
 
 	// Tedious. This data is placed in the key portion of the key value pair 
 	// JSON responses for easier parsing. The dates are also used to determine
 	// the last day of a specific month, and for DB querying 
-	private final String[] months2014 = {"01/01/2014", "02/01/2014","03/01/2014","04/01/2014","05/01/2014","06/01/2014",
-										"07/01/2014","08/01/2014","09/01/2014","10/01/2014","11/01/2014","12/01/2014"};
+	private final String[] months2014 = HelperClass.getMonthsArray(2014);
 	
-	private final String[] months2015 = {"01/01/2015", "02/01/2015","03/01/2015","04/01/2015","05/01/2015","06/01/2015",
-										"07/01/2015","08/01/2015","09/01/2015","10/01/2015","11/01/2015","12/01/2015"};
+	private final String[] months2015 = HelperClass.getMonthsArray(2015);
 	
 	private final String[] monthStrings = {"January", "February", "March", "April", "May", "June", "July", 
 											"August", "September", "October", "November", "December"};

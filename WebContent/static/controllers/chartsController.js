@@ -46,7 +46,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
         };
     
         $scope.configTotalPaid = {
-            title: "Average Vehicle Tow Charge",
+            title: "Average Dollar Amount Charged Per Tow",
             tooltips: true,
             labels: true,
             mouseover: function() {},
@@ -65,7 +65,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
    var dataVals = [];
     	
     	
-   $scope.configTotalPaid.title = "Tow Charge Average";
+   $scope.configTotalPaid.title = "Monthly Tow Charge Average (Dollars)";
     		
    for( var i=0; i<SharedData.getAveragePaid2014().length; i++ ){
         		
@@ -90,10 +90,29 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     $scope.yearStolenChart = '2014 Stolen';
     
     // Force event listeners to fire
-    $scope.changeChart();
     $scope.changeStolenPie();
+        
+        	$scope.data = [];
+    	$scope.data["series"] =  ['Vehicles Towed 2014', 'Vehicles Towed 2015'];
+    	var dataVals = [];
     	
-    	$scope.drawCharts = true;
+            
+    		$scope.config.title = "Vehicles Towed: 2014 & 2015";
+    		
+    		for( var i=0; i<SharedData.getYear2014().length; i++ ){
+        		
+        		var yArray = [];
+        		yArray.push(SharedData.getYear2014()[i]);
+                yArray.push(SharedData.getYear2015()[i]);
+                
+        		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
+      
+        		dataVals.push(jsonObj);
+        	}
+
+    	$scope.data["data"] = dataVals;
+    	
+    $scope.drawCharts = true;
     });
     
     $scope.doWork = function() {
@@ -181,9 +200,9 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
         };
     
     $scope.configTotalsPie = {
-        title: "Vehicles Towed Total: 2014 & 2015",
+        title: "Total Vehicles Towed: 2014 & 2015",
         tooltips: true,
-        labels: false,
+        labels: true,
         mouseover: function() {},
         mouseout: function() {},
         click: function() {},
@@ -196,7 +215,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     };
                                                                             
     $scope.configStolenPie = {
-        title: "Vehicles Stolen by Month: 2014 & 2015",
+        title: "Stolen Vehicles Towed by Month: 2014 & 2015",
         tooltips: true,
         labels: false,
         mouseover: function() {},
@@ -213,7 +232,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     $scope.configVehicleSearch = {
         title: "Please Initiate A Search",
         tooltips: true,
-        labels: false,
+        labels: true,
         mouseover: function() {},
         mouseout: function() {},
         click: function() {},
@@ -236,6 +255,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
             if ( $scope.make === undefined || ! $scope.make ) {
                 return;
             }
+            
 			$scope.dataVehicleSearch = [];
 			$scope.configVehicleSearch.title = $scope.make + " " + $scope.model + " Tows";
 			
@@ -261,41 +281,6 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     	});
     };
     
-    $scope.changeChart = function() {
-    	
-    	$scope.data = [];
-    	$scope.data["series"] =  ['Vehicles Towed'];
-    	var dataVals = [];
-    	
-    	if ( $scope.yearChart === "2014 Tows") {
-            
-    		$scope.config.title = "Vehicles Towed: 2014";
-    		
-    		for( var i=0; i<SharedData.getYear2014().length; i++ ){
-        		
-        		var yArray = [];
-        		yArray.push(SharedData.getYear2014()[i]);
-        		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
-      
-        		dataVals.push(jsonObj);
-        	}
-    	}
-    	else if( $scope.yearChart === "2015 Tows"){
-            
-    		$scope.config.title = "Vehicles Towed: 2015";
-    		
-    		for( var i=0; i<SharedData.getYear2015().length; i++ ){
-        		
-        		var yArray = [];
-        		yArray.push(SharedData.getYear2015()[i]);
-        		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
-      
-        		dataVals.push(jsonObj);
-        	}
-    	}
-
-    	$scope.data["data"] = dataVals;
-    }
     
     $scope.changeStolenPie = function() {
     	

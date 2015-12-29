@@ -1,5 +1,6 @@
 package greatSuccess;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
@@ -48,5 +49,31 @@ public class HelperClass {
     	}
     	
     	return String.join(" ", returnStr);
+    }
+    
+    /**
+     * Returns an array of months from January to December first
+     * of the input int year.
+     * @param year
+     * @return
+     */
+    public static String[] getMonthsArray(int year) {
+    	
+    	String[] monthsArray = new String[12];
+    	
+    	Calendar cal = Calendar.getInstance();
+    	cal.set(Calendar.DATE, 1);
+    	cal.set(Calendar.YEAR, year);
+    	
+    	SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy");
+    	
+    	for ( int i=0; i < 12; i++ ) {
+    		
+    		cal.set(Calendar.MONTH, i);
+        	
+        	monthsArray[i] = sdf.format(cal.getTime());
+    	}
+    	
+    	return monthsArray;
     }
 }

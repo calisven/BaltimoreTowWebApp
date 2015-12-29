@@ -7,8 +7,14 @@
                 </div>
                 <!-- /.col-lg-12 -->
             </div>
-           <select class="btn btn-default btn-sm" ng-options="yearChart for yearChart in charts" ng-model="yearChart" ng-change="changeChart()"></select>
-               <div ng-if="drawCharts == true" data-ac-chart="'bar'" data-ac-data="data" data-ac-config="config" id='chart' class='chart' ></div>   		
+    
+            <div ng-show="drawCharts == true">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="panel-body">
+                        <div data-ac-chart="'bar'" data-ac-data="data" data-ac-config="config" id='chart' class='chart' ></div>   		                 </div>
+                </div>
+            </div>
             <!-- /.row -->
             <div class="row">
                 <div class="col-lg-6">
@@ -18,7 +24,7 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div ng-if="drawCharts == true" data-ac-chart="'pie'" data-ac-data="dataTotalsPie" data-ac-config="configTotalsPie" id='circleTotalsPie' class='pie'></div>
+                            <div data-ac-chart="'pie'" data-ac-data="dataTotalsPie" data-ac-config="configTotalsPie" id='circleTotalsPie' class='pie'></div>
                         </div>
                         <!-- /.panel-body -->
                     </div>
@@ -33,7 +39,8 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <select class="btn btn-default btn-sm" ng-options="yearStolenChart for yearStolenChart in stolenCharts" ng-model="yearStolenChart" ng-change="changeStolenPie()"></select>
-                            <div ng-if="drawCharts == true" data-ac-chart="'pie'" data-ac-data="dataStolenPie" data-ac-config="configStolenPie" id='circleStolenPie' class='pie'></div>
+                            <div data-ac-chart="'pie'" data-ac-data="dataStolenPie" data-ac-config="configStolenPie" id='circleStolenPie' class='pie'></div>
+                            <br><p><small>This chart displays the number of towed vehicles that were also reported stolen on a monthly basis.</small></p>
                         </div>
                         <!-- /.panel-body -->
                     </div>
@@ -43,13 +50,15 @@
                 <div class="col-lg-12">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            Tow Charges
+                            Average Charges to Vehicle Owner Per Vehicle Towed
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div ng-if="drawCharts == true" data-ac-chart="'area'" data-ac-data="dataAverageCharge" 
+                            <div data-ac-chart="'area'" data-ac-data="dataAverageCharge" 
                             data-ac-config="configTotalPaid" id='chartAvg' class='chart'></div>
                         </div>
+                        <br><p><small><center>This chart displays the average dollar amount a vehicle owner would need to pay to have their vehicle returned
+                                      from the tow company.</center></small></p>
                         <!-- /.panel-body -->
                     </div>
                     <!-- /.panel -->
@@ -61,13 +70,31 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div ng-if="drawCharts == true" data-ac-chart="'line'" data-ac-data="dataVehicleSearch" data-ac-config="configVehicleSearch" id='chartDataSearch' class='chart'></div>
-                            <div class="btn-group">
-							<label>Make</label><input type="text" ng-model="make" placeholder="Ford"  value="Bob"> <!-- ng-init="rootFolders='Bob'" -->
-							<label>Model</label><input type="text" ng-model="model" placeholder="Focus" value="Bob">
-							<button type="submit" class="btn btn-primary btn-xs" ng-click="submitVehicle()">Get Data</button>
+                            <div data-ac-chart="'line'" data-ac-data="dataVehicleSearch" data-ac-config="configVehicleSearch" id='chartDataSearch' class='chart'></div>
+                            
+                            <!-- 
+                            <form  ng-app="myApp"  ng-controller="validateCtrl"
+name="myForm" novalidate>
+
+<p>Username:<br>
+  <input type="text" name="user" ng-model="user" required>
+  <span style="color:red" ng-show="myForm.user.$dirty && myForm.user.$invalid">
+  <span ng-show="myForm.user.$error.required">Username is required.</span>
+  </span>
+</p>
+
+                            -->
+                            
+                            <form ng-submit="submitVehicle()" class="btn-group" name="vehicleForm" novalidate>
+							<label>Make</label><input name="make" type="text" ng-model="make" placeholder="Ford"  value="Bob" required>
+                            <span style="color:red" ng-show="vehicleForm.make.$dirty && vehicleForm.make.$invalid">
+                            <span ng-show="vehicleForm.make.$error.required">Make is required.</span>
+                            </span>
+							<label>Model</label><input type="text" ng-model="model" placeholder="Focus" value="Bob"> &nbsp; &nbsp;
+							<button type="submit" ng-disabled="vehicleForm.make.$invalid" class="btn btn-primary btn-sm pull-right" 
+                                    >Get Data</button>
 							<p><small>Search for a specific vehicle make and model. The model is <b>optional.</b></small></p>
-                            </div>
+                            </form>
                         </div>
                         <!-- /.panel-body -->
                     </div>
@@ -76,5 +103,6 @@
                 <!-- /.col-lg-6 -->
             </div>
             <!-- /.row -->
-        </div>
+    </div>
+</div>
         <!-- /#page-wrapper -->
