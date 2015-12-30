@@ -6,6 +6,8 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     $scope.dataReady = false;
     
     $scope.drawCharts = false;
+            
+    $scope.searchType = "vSearch";
     
     // The database query takes time, and therefore requires
     // Angular to hide the charts until they are ready
@@ -232,7 +234,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     $scope.configVehicleSearch = {
         title: "Please Initiate A Search",
         tooltips: true,
-        labels: true,
+        labels: false,
         mouseover: function() {},
         mouseout: function() {},
         click: function() {},
@@ -250,19 +252,42 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
             $scope.model = "";
         }
     	
-    	ChartServices.getVehicle($scope.make, $scope.model).success(function(data) {
-            // TODO
+    	ChartServices.getVehicle($scope.make, $scope.model, $scope.searchType).success(function(data) {
+            
             if ( $scope.make === undefined || ! $scope.make ) {
+                console.log("Bad request: No make found");
                 return;
             }
             
 			$scope.dataVehicleSearch = [];
-			$scope.configVehicleSearch.title = $scope.make + " " + $scope.model + " Tows";
-			
+			$scope.configVehicleSearch.title = $scope.make;
+            
+            // Prevents 'undefined' from displaying in the chart title
+            // should the user not use vehicle model as part of their search
+            // This also (interestingly, thanks AngularJS...) forces the 
+            // charts to update once new data is received
+            if ( typeof $scope.model != 'undefined' ) {
+                $scope.configVehicleSearch.title += " " + $scope.model;
+            }
+            else {
+                $scope.configVehicleSearch.title += " ";
+            }
+            
+		
+            if ( $scope.searchType === 'vSearch' ) {
+                $scope.configVehicleSearch.title += " Vehicles Towed";
+            }
+            else if ( $scope.searchType === 'sSearch' ) {
+                $scope.configVehicleSearch.title += " Vehicles Towed and Reported Stolen";
+            }
+            else {
+                $scope.configVehicleSearch.title = "Bad search type request";
+            }
+            
 			$scope.dataVehicleSearch['series'] = ['2014', '2015'];
 			
 			var dataVals = [];
-			
+
 			for( var i=0; i<data["2014"].length; i++ ){
         		
         		var yArray = [];
@@ -275,7 +300,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     		}
 			
 			$scope.dataVehicleSearch["data"] = dataVals;
-			
+            
     	}).error(function(error) {
     		$scope.vehicleMessage = "Please fill in the 'Make' field";
     	});

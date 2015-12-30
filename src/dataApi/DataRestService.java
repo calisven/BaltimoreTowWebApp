@@ -289,5 +289,118 @@ public class DataRestService {
 
     }
     
+    @GET
+    @Path("/stolen/")
+    @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * Allows the user to query individual vehicle make / model 
+     * data
+     * @param vehicleMake
+     * @param vehicleModel
+     * @return Total vehicles on a monthly basis that were towed
+     */
+    public Response getStolenData(@QueryParam("vehicleMake") String vehicleMake, 
+    		@QueryParam("vehicleModel") String vehicleModel) {
+    	
+    	// Unfortunately, all vehicles were capitalized in the database...
+    	if ( vehicleMake != null && ! vehicleMake.isEmpty() ) {
+    		vehicleMake = HelperClass.capitalize(vehicleMake);
+
+    		// This is an optional parameter
+    		if ( vehicleModel != null && ! vehicleModel.isEmpty()) {
+    			vehicleModel = HelperClass.capitalize(vehicleModel);
+    		}
+    	}
+    	// They did a bad thing.
+    	else {
+    		return Response.status(400).build();
+    	}
+    	
+    	DatabaseSingleton dbSingleton = DatabaseSingleton.getInstance();
+        DB db = dbSingleton.getDatabase();
+        DBCollection coll = db.getCollection("cars");
+        
+        JSONObject array = new JSONObject();
+        List<Integer> array2015 = new ArrayList<Integer>();
+        List<Integer> array2014 = new ArrayList<Integer>();
+        
+        BasicDBObject fields = new BasicDBObject("vehicleMake", true).append("stolenVehicleFlag", true).append("vehicleModel", true).append("_id",false);
+        
+        for ( int i=0; i < months2015.length; i++ ) {
+        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2015[i]))
+        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2015[i]))))
+        											.append("vehicleMake", vehicleMake);
+        	
+        	// Add vehicleModel to the query
+        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
+        		query.append("vehicleModel", vehicleModel);
+        	}
+        	
+        	DBCursor cursor = coll.find(query, fields);
+        	
+        	int numberStolen = 0;
+        	
+        	// Iterate over every returned field for
+        	// data parsing
+        	while(cursor.hasNext()) {
+        	
+        		DBObject nextEntry = cursor.next();
+        		// Check if this is a stolen vehicle. Entries in the DB are often
+        		// blank, thus requiring a check if the value is castable to Integer
+        		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
+    			
+        			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
+        			
+        			if ( wasStolen == 1 ) {
+        				numberStolen ++;
+        			}
+        		}
+        	}
+        	array2015.add(numberStolen);
+        }
+        
+        for ( int i=0; i < months2014.length; i++ ) {
+        	
+        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2014[i]))
+        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2014[i]))))
+        											.append("vehicleMake", vehicleMake);
+        	
+        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
+        		query.append("vehicleModel", vehicleModel);
+        	}
+        	
+        	DBCursor cursor = coll.find(query, fields);
+        	
+        	int numberStolen = 0;
+        	
+        	// Iterate over every returned field for
+        	// data parsing
+        	while(cursor.hasNext()) {
+        	
+        		DBObject nextEntry = cursor.next();
+        		// Check if this is a stolen vehicle. Entries in the DB are often
+        		// blank, thus requiring a check if the value is castable to Integer
+        		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
+    			
+        			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
+        			if ( wasStolen == 1 ) {
+        				numberStolen ++;
+        			}
+        		}
+        	}
+        	array2014.add(numberStolen);
+        }
+
+        try {
+			array.put("2014", array2014);
+			array.put("2015", array2015);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+        
+    	return Response.status(200).entity(array).build();
+
+    }
+    
     
 }

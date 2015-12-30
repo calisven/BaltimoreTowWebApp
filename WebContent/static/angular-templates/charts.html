@@ -25,6 +25,7 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                             <div data-ac-chart="'pie'" data-ac-data="dataTotalsPie" data-ac-config="configTotalsPie" id='circleTotalsPie' class='pie'></div>
+                            <br><p><small>Displays the total number of vehicles towed for 2014 and 2015.</small></p>
                         </div>
                         <!-- /.panel-body -->
                     </div>
@@ -40,7 +41,7 @@
                         <div class="panel-body">
                             <select class="btn btn-default btn-sm" ng-options="yearStolenChart for yearStolenChart in stolenCharts" ng-model="yearStolenChart" ng-change="changeStolenPie()"></select>
                             <div data-ac-chart="'pie'" data-ac-data="dataStolenPie" data-ac-config="configStolenPie" id='circleStolenPie' class='pie'></div>
-                            <br><p><small>This chart displays the number of towed vehicles that were also reported stolen on a monthly basis.</small></p>
+                            <br><p><small>Displays the number of towed vehicles that were also reported stolen on a monthly basis.</small></p>
                         </div>
                         <!-- /.panel-body -->
                     </div>
@@ -72,18 +73,6 @@
                         <div class="panel-body">
                             <div data-ac-chart="'line'" data-ac-data="dataVehicleSearch" data-ac-config="configVehicleSearch" id='chartDataSearch' class='chart'></div>
                             
-                            <!-- 
-                            <form  ng-app="myApp"  ng-controller="validateCtrl"
-name="myForm" novalidate>
-
-<p>Username:<br>
-  <input type="text" name="user" ng-model="user" required>
-  <span style="color:red" ng-show="myForm.user.$dirty && myForm.user.$invalid">
-  <span ng-show="myForm.user.$error.required">Username is required.</span>
-  </span>
-</p>
-
-                            -->
                             
                             <form ng-submit="submitVehicle()" class="btn-group" name="vehicleForm" novalidate>
 							<label>Make</label><input name="make" type="text" ng-model="make" placeholder="Ford"  value="Bob" required>
@@ -93,7 +82,17 @@ name="myForm" novalidate>
 							<label>Model</label><input type="text" ng-model="model" placeholder="Focus" value="Bob"> &nbsp; &nbsp;
 							<button type="submit" ng-disabled="vehicleForm.make.$invalid" class="btn btn-primary btn-sm pull-right" 
                                     >Get Data</button>
-							<p><small>Search for a specific vehicle make and model. The model is <b>optional.</b></small></p>
+                            <br/>
+                            <label>
+                            <input type="radio" ng-model="searchType" value="vSearch">
+                            Vehicle Search
+                            </label><i class="fa fa-question-circle fa-fw" title="Does a monthly search for vehicles of this make/model towed"></i><br/>
+                            <label>
+                            <input type="radio" ng-model="searchType" value="sSearch">
+                            Stolen Search
+                            </label><i class="fa fa-question-circle fa-fw" title="Does a monthly search for vehicles of this make/model towed and reported stolen"></i><br/>
+							<p><small>Search for a specific vehicle make and model towed. The model is <b>optional.</b><br>
+                            Use the radio buttons above to switch the search type.</small></p>
                             </form>
                         </div>
                         <!-- /.panel-body -->
