@@ -7,7 +7,9 @@ angular.module('mainApp.chartServices', []).factory('ChartServices', [ '$http', 
 		getHeartbeat: function() {
 			return $http.get('/CSWebProject/dataApi/heartbeat');
 		},
-		
+        getAvailableYears: function() {
+            return $http.get('/CSWebProject/dataApi/years');  
+        },
 		getVehicles: function(vehicles) {
 		
 			if ( vehicles && vehicles.length > 0) {

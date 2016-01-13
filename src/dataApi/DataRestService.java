@@ -1,8 +1,9 @@
 package dataApi;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.ws.rs.GET;
@@ -27,18 +28,16 @@ import greatSuccess.HelperClass;
 
 @Path("")
 public class DataRestService {
-
-	// Tedious. This data is placed in the key portion of the key value pair 
-	// JSON responses for easier parsing. The dates are also used to determine
-	// the last day of a specific month, and for DB querying 
-	private final String[] months2014 = HelperClass.getMonthsArray(2014);
 	
-	private final String[] months2015 = HelperClass.getMonthsArray(2015);
+	// To add a new year, simply, add the year string to 'yearsCovered
+	// and another in 'allYears'
+	private final String[] yearsCovered = {"2014", "2015"};
+	
+	private final String[][] allYears = {HelperClass.getMonthsArray(2014), HelperClass.getMonthsArray(2015)};
 	
 	private final String[] monthStrings = {"January", "February", "March", "April", "May", "June", "July", 
 											"August", "September", "October", "November", "December"};
 	
-
     @GET
     @Path("/heartbeat")
     /**
@@ -46,10 +45,23 @@ public class DataRestService {
      * if the API and database is available
      * @return
      */
-    public Response getDefaultUserInJSON() {
+    public Response getHeartbeat() {
+    	
         return Response.status(200).build();
     }
     
+    @GET
+    @Path("/years")
+    /**
+     * Simple test function for determining
+     * if the API and database is available
+     * @return
+     */
+    @Produces(MediaType.TEXT_PLAIN)
+    public String getAvailableYears() {
+    	
+        return Arrays.toString(yearsCovered);
+    }
     
     @GET
     @Path("/monthlyTows")
@@ -69,40 +81,235 @@ public class DataRestService {
         DB db = dbSingleton.getDatabase();
         DBCollection coll = db.getCollection("cars");
         
-        int totals2014 = 0;
-        int totals2015 = 0;
-        
-        // Datasets that will be inserted into JSON responses and later parsed by the
-        // client. The the key / value pairs are <MONTH, DATA>
-        LinkedHashMap<String, Integer> year2014 = new LinkedHashMap<String, Integer>();
-        LinkedHashMap<String, Integer> year2015 = new LinkedHashMap<String, Integer>();
-        
-        LinkedHashMap<String, Integer> year2014Paid = new LinkedHashMap<String, Integer>();
-        LinkedHashMap<String, Integer> year2015Paid = new LinkedHashMap<String, Integer>();
-        
-        LinkedHashMap<String, Integer> year2014Stolen = new LinkedHashMap<String, Integer>();
-        LinkedHashMap<String, Integer> year2015Stolen = new LinkedHashMap<String, Integer>();
-        
         // Object used to provide what fields are (and aren't) returned for a successful query
         BasicDBObject fields = new BasicDBObject("vehicleMake",true).append("vehicleModel", true)
         		.append("totalPaid", true).append("stolenVehicleFlag", true)
         		.append("_id",false);
         
-        // Iterate over every month, query data for that specific month
-        for ( int i=0; i < months2014.length; i++ ) {
+        YearResultObject[] results = new YearResultObject[allYears.length];
+        
+        for ( int i=0; i < yearsCovered.length; i++ ) {
+        	results[i] = doStuff(allYears[i], yearsCovered[i], coll, fields);
+        }
+	        
+	    // Will hold the return data
+	    JSONObject merge = new JSONObject();
+	    
+	    int yearsTotals = 0;
+	    
+	    for( int i=0; i < yearsCovered.length; i++ ) {
+	    
+	    	// Combine data results into JSON format
+	    	try {
+				merge.put(results[i].getYearName(), results[i].getYearResults());
+				merge.put(results[i].getYearName() + "Total", results[i].getTotalVehiclesTowed());
+				yearsTotals += results[i].getTotalVehiclesTowed();
+				merge.put(results[i].getYearName() + "Paid", results[i].getYearPaid());
+				merge.put(results[i].getYearName() + "Stolen", results[i].getYearStolen());
+			
+	    	} catch (JSONException e) {
+	    		// TODO Auto-generated catch block
+	    		e.printStackTrace();
+	    		return Response.status(500).build();
+	    	}
+	    }
+	    
+	    try {
+			merge.put("combinedTotal", yearsTotals);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    
+	    return Response.status(200).entity(merge).build();
+}
+    
+  
+    @GET
+    @Path("/vehicle/")
+    @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * Allows the user to query individual vehicle make / model 
+     * data
+     * @param vehicleMake
+     * @param vehicleModel
+     * @return Total vehicles on a monthly basis that were towed
+     */
+    public Response getMainData(@QueryParam("vehicleMake") String vehicleMake, 
+    		@QueryParam("vehicleModel") String vehicleModel) {
+    	
+    	HashMap<String,String> makeModel = DataRestHelper.validateVehicle(vehicleMake, vehicleModel);
+    	
+    	if (makeModel != null) {
+    		vehicleMake = makeModel.get("vehicleMake");
+    		vehicleModel = makeModel.get("vehicleModel");
+    	}
+    	else {
+    		return Response.status(400).build();
+    	}
+    	
+    	DatabaseSingleton dbSingleton = DatabaseSingleton.getInstance();
+        DB db = dbSingleton.getDatabase();
+        DBCollection coll = db.getCollection("cars");
+        
+        JSONObject array = new JSONObject();
+        
+        BasicDBObject fields = new BasicDBObject("vehicleMake", true).append("vehicleModel", true)
+        		.append("_id",false);
+        
+        for ( int i=0; i < allYears.length; i++ ) {
         	
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2014[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2014[i]))));
+        	List<Integer> yearArray = new ArrayList<Integer>();
+        	
+        	for( int monthValue=0; monthValue < allYears[i].length; monthValue++ ) {
+        		
+            	BasicDBObject query = getYearlyQueryWithVehicle(allYears[i][monthValue], vehicleMake);
+            	
+            	// Add vehicleModel to the query
+            	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
+            		query.append("vehicleModel", vehicleModel);
+            	}
+            	
+            	DBCursor cursor = coll.find(query, fields);
+            	
+            	yearArray.add(cursor.count());
+        	}
+        	
+            try {
+    			array.put(yearsCovered[i], yearArray);
+    		} catch (JSONException e) {
+    			e.printStackTrace();
+    		}
+        }
+        
+    	return Response.status(200).entity(array).build();
+
+    }
+    
+    @GET
+    @Path("/stolen/")
+    @Produces(MediaType.APPLICATION_JSON)
+    /**
+     * Allows the user to query individual vehicle make / model 
+     * data
+     * @param vehicleMake
+     * @param vehicleModel
+     * @return Total vehicles on a monthly basis that were towed
+     */
+    public Response getStolenData(@QueryParam("vehicleMake") String vehicleMake, 
+    		@QueryParam("vehicleModel") String vehicleModel) {
+    	
+    	HashMap<String,String> makeModel = DataRestHelper.validateVehicle(vehicleMake, vehicleModel);
+    	
+    	if (makeModel != null) {
+    		vehicleMake = makeModel.get("vehicleMake");
+    		vehicleModel = makeModel.get("vehicleModel");
+    	}
+    	else {
+    		return Response.status(400).build();
+    	}
+    	
+    	DatabaseSingleton dbSingleton = DatabaseSingleton.getInstance();
+        DB db = dbSingleton.getDatabase();
+        DBCollection coll = db.getCollection("cars");
+        
+        JSONObject array = new JSONObject();
+        
+        BasicDBObject fields = new BasicDBObject("vehicleMake", true).append("stolenVehicleFlag", true)
+        		.append("vehicleModel", true).append("_id",false);
+        
+        for ( int i=0; i < allYears.length; i++) {
+        	
+        	List<Integer> yearArray = new ArrayList<Integer>();
+        	
+        	for ( int monthValue=0; monthValue < allYears[i].length; monthValue++ ) {
+        		
+        		BasicDBObject query = getYearlyQueryWithVehicle(allYears[i][monthValue], vehicleMake);
+            	
+            	// Add vehicleModel to the query
+            	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
+            		query.append("vehicleModel", vehicleModel);
+            	}
+            	
+            	DBCursor cursor = coll.find(query, fields);
+            	
+            	int numberStolen = 0;
+            	
+            	// Iterate over every returned field for
+            	// data parsing
+            	while(cursor.hasNext()) {
+            	
+            		DBObject nextEntry = cursor.next();
+            		// Check if this is a stolen vehicle. Entries in the DB are often
+            		// blank, thus requiring a check if the value is castable to Integer
+            		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
+        			
+            			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
+            			
+            			if ( wasStolen == 1 ) {
+            				numberStolen ++;
+            			}
+            		}
+            	}
+            	yearArray.add(numberStolen);     		
+        	}
+        	
+        	try {
+    			array.put(yearsCovered[i], yearArray);
+    		} catch (JSONException e) {
+    			e.printStackTrace();
+    		}
+        }
+        
+    	return Response.status(200).entity(array).build();
+
+    }
+    
+    /**
+     * Returns a DB query used to get all tows for the given
+     * input month
+     * @param month
+     * @return
+     */
+    public BasicDBObject getYearlyQuery(String month) {
+    	
+    	return new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(month))
+				.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(month))));
+    }
+    
+    /**
+     * Returns a DB query used to get all tows for the given input
+     * month and vehicle
+     * @param month
+     * @param vehicleMake
+     * @return
+     */
+    public BasicDBObject getYearlyQueryWithVehicle(String month, String vehicleMake) {
+    	
+    	return new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(month))
+				.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(month))))
+				.append("vehicleMake", vehicleMake);
+    }
+    
+    public YearResultObject doStuff(String[] monthList, String year, DBCollection coll, BasicDBObject fields) {
+    	
+    	YearResultObject results = new YearResultObject(year);
+    	int totalVehiclesTowed = 0;
+    	
+        // Iterate over every month, query data for that specific month
+        for ( int i=0; i < monthList.length; i++ ) {
+        	
+        	BasicDBObject query = getYearlyQuery(monthList[i]);
 
         	// Will hold the result of a specific query
         	DBCursor cursor = coll.find(query, fields);
 
         	// Add to the total number of cars towed for that
         	// specific month
-        	year2014.put(monthStrings[i], cursor.count());
+        	results.setYearResults(monthStrings[i], cursor.count());
         	
         	// Add to the total number of cars towed
-        	totals2014 += cursor.count();
+        	totalVehiclesTowed += cursor.count();
         	
         	int monthlyPaid = 0;
         	int numberStolen = 0;
@@ -139,268 +346,12 @@ public class DataRestService {
         	
         	// Add JSON data key / value pairs
         	// The monthly paid is an average of every vehicle towed
-        	year2014Paid.put(monthStrings[i], monthlyPaid / cursor.count());
-        	year2014Stolen.put(monthStrings[i], numberStolen);
+        	results.setYearPaid(monthStrings[i], monthlyPaid / cursor.count());
+        	results.setYearStolen(monthStrings[i], numberStolen);
         }
         
-        // Repeat for year 2015. Ideally this would all be put in
-        // another function
-        for ( int i=0; i < months2015.length; i++ ) {
-        	
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2015[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2015[i]))));
-
-        	DBCursor cursor = coll.find(query);
-        	
-        	year2015.put(monthStrings[i], cursor.count());
-        	
-        	totals2015 += cursor.count();
-        	
-        	int monthlyPaid = 0;
-        	int numberStolen = 0;
-	       	
-        	while(cursor.hasNext()) {
-        		
-        		DBObject nextEntry = cursor.next();
-        		// There were empty entries (many of them...)
-        		String temp = (String) nextEntry.get("totalPaid");
-        		if (temp != "") {
-        			temp = temp.replace("$", "");
-        			monthlyPaid += Float.parseFloat(temp);
-        		}
-        		else {
-        			// Vehicle was never claimed
-        		}
-        		// Check if this is a stolen vehicle. Entries in the DB are often
-        		// blank, thus requiring a check if the value is castable to Integer
-        		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
-        			
-        			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
-        			if ( wasStolen == 1 ) {
-        				numberStolen ++;
-        			}
-        		}
-        		
-        	}
-        	
-        	year2015Paid.put(monthStrings[i], monthlyPaid / cursor.count());
-        	year2015Stolen.put(monthStrings[i], numberStolen);
-        }
-	        
-	    // Will hold the return data
-	    JSONObject merge = new JSONObject();
-	    
-	    // Combine data results into JSON format
-	    try {
-			merge.put("2014", year2014);
-			merge.put("2015", year2015);
-			merge.put("2014Total", totals2014);
-			merge.put("2015Total", totals2015);
-			merge.put("combinedTotal", totals2014 + totals2015);
-			merge.put("2014Paid", year2014Paid);
-			merge.put("2015Paid", year2015Paid);
-			merge.put("2014Stolen", year2014Stolen);
-			merge.put("2015Stolen", year2015Stolen);
-			
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	 	
-    	return Response.status(200).entity(merge).build();
+        results.setTotalVehiclesTowed(totalVehiclesTowed);
+        
+        return results;
     }
-    
-  
-    @GET
-    @Path("/vehicle/")
-    @Produces(MediaType.APPLICATION_JSON)
-    /**
-     * Allows the user to query individual vehicle make / model 
-     * data
-     * @param vehicleMake
-     * @param vehicleModel
-     * @return Total vehicles on a monthly basis that were towed
-     */
-    public Response getMainData(@QueryParam("vehicleMake") String vehicleMake, 
-    		@QueryParam("vehicleModel") String vehicleModel) {
-    	
-    	// Unfortunately, all vehicles were capitalized in the database...
-    	if ( vehicleMake != null && ! vehicleMake.isEmpty() ) {
-    		vehicleMake = HelperClass.capitalize(vehicleMake);
-
-    		// This is an optional parameter
-    		if ( vehicleModel != null && ! vehicleModel.isEmpty()) {
-    			vehicleModel = HelperClass.capitalize(vehicleModel);
-    		}
-    	}
-    	// They did a bad thing.
-    	else {
-    		return Response.status(400).build();
-    	}
-    	
-    	DatabaseSingleton dbSingleton = DatabaseSingleton.getInstance();
-        DB db = dbSingleton.getDatabase();
-        DBCollection coll = db.getCollection("cars");
-        
-        JSONObject array = new JSONObject();
-        List<Integer> array2015 = new ArrayList<Integer>();
-        List<Integer> array2014 = new ArrayList<Integer>();
-        
-        BasicDBObject fields = new BasicDBObject("vehicleMake", true).append("vehicleModel", true).append("_id",false);
-        
-        for ( int i=0; i < months2015.length; i++ ) {
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2015[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2015[i]))))
-        											.append("vehicleMake", vehicleMake);
-        	
-        	// Add vehicleModel to the query
-        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
-        		query.append("vehicleModel", vehicleModel);
-        	}
-        	
-        	DBCursor cursor = coll.find(query, fields);
-        	
-        		array2015.add(cursor.count());
-        }
-        
-        for ( int i=0; i < months2014.length; i++ ) {
-        	
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2014[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2014[i]))))
-        											.append("vehicleMake", vehicleMake);
-        	
-        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
-        		query.append("vehicleModel", vehicleModel);
-        	}
-        	
-        	DBCursor cursor = coll.find(query, fields);
-        	
-        	array2014.add(cursor.count());
-        }
-
-        try {
-			array.put("2014", array2014);
-			array.put("2015", array2015);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-        
-    	return Response.status(200).entity(array).build();
-
-    }
-    
-    @GET
-    @Path("/stolen/")
-    @Produces(MediaType.APPLICATION_JSON)
-    /**
-     * Allows the user to query individual vehicle make / model 
-     * data
-     * @param vehicleMake
-     * @param vehicleModel
-     * @return Total vehicles on a monthly basis that were towed
-     */
-    public Response getStolenData(@QueryParam("vehicleMake") String vehicleMake, 
-    		@QueryParam("vehicleModel") String vehicleModel) {
-    	
-    	// Unfortunately, all vehicles were capitalized in the database...
-    	if ( vehicleMake != null && ! vehicleMake.isEmpty() ) {
-    		vehicleMake = HelperClass.capitalize(vehicleMake);
-
-    		// This is an optional parameter
-    		if ( vehicleModel != null && ! vehicleModel.isEmpty()) {
-    			vehicleModel = HelperClass.capitalize(vehicleModel);
-    		}
-    	}
-    	// They did a bad thing.
-    	else {
-    		return Response.status(400).build();
-    	}
-    	
-    	DatabaseSingleton dbSingleton = DatabaseSingleton.getInstance();
-        DB db = dbSingleton.getDatabase();
-        DBCollection coll = db.getCollection("cars");
-        
-        JSONObject array = new JSONObject();
-        List<Integer> array2015 = new ArrayList<Integer>();
-        List<Integer> array2014 = new ArrayList<Integer>();
-        
-        BasicDBObject fields = new BasicDBObject("vehicleMake", true).append("stolenVehicleFlag", true).append("vehicleModel", true).append("_id",false);
-        
-        for ( int i=0; i < months2015.length; i++ ) {
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2015[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2015[i]))))
-        											.append("vehicleMake", vehicleMake);
-        	
-        	// Add vehicleModel to the query
-        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
-        		query.append("vehicleModel", vehicleModel);
-        	}
-        	
-        	DBCursor cursor = coll.find(query, fields);
-        	
-        	int numberStolen = 0;
-        	
-        	// Iterate over every returned field for
-        	// data parsing
-        	while(cursor.hasNext()) {
-        	
-        		DBObject nextEntry = cursor.next();
-        		// Check if this is a stolen vehicle. Entries in the DB are often
-        		// blank, thus requiring a check if the value is castable to Integer
-        		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
-    			
-        			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
-        			
-        			if ( wasStolen == 1 ) {
-        				numberStolen ++;
-        			}
-        		}
-        	}
-        	array2015.add(numberStolen);
-        }
-        
-        for ( int i=0; i < months2014.length; i++ ) {
-        	
-        	BasicDBObject query = new BasicDBObject("towedDateTime", new BasicDBObject("$gte", new Date(months2014[i]))
-        											.append("$lte", HelperClass.getLastDateOfCurrentMonth(new Date(months2014[i]))))
-        											.append("vehicleMake", vehicleMake);
-        	
-        	if ( vehicleModel != null && ! vehicleModel.isEmpty() ) {
-        		query.append("vehicleModel", vehicleModel);
-        	}
-        	
-        	DBCursor cursor = coll.find(query, fields);
-        	
-        	int numberStolen = 0;
-        	
-        	// Iterate over every returned field for
-        	// data parsing
-        	while(cursor.hasNext()) {
-        	
-        		DBObject nextEntry = cursor.next();
-        		// Check if this is a stolen vehicle. Entries in the DB are often
-        		// blank, thus requiring a check if the value is castable to Integer
-        		if ( nextEntry.get("stolenVehicleFlag") instanceof Integer ) {
-    			
-        			Integer wasStolen = (Integer)nextEntry.get("stolenVehicleFlag");
-        			if ( wasStolen == 1 ) {
-        				numberStolen ++;
-        			}
-        		}
-        	}
-        	array2014.add(numberStolen);
-        }
-
-        try {
-			array.put("2014", array2014);
-			array.put("2015", array2015);
-		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-        
-    	return Response.status(200).entity(array).build();
-
-    }
-    
-    
 }

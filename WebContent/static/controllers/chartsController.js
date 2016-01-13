@@ -1,5 +1,7 @@
 'use strict'
 
+const MONTHS_IN_YEAR = 12;
+
 angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope', 'SharedData', 'ChartServices',
         function($scope, SharedData, ChartServices){
     
@@ -13,6 +15,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     // Angular to hide the charts until they are ready
     $scope.$watch("dataReady", function(newValue, oldValue) {
         
+        // Prevents the watcher from firing right away
     	if ( newValue === oldValue ) { return; }
     	
         // Get all data results from a shared data
@@ -20,14 +23,18 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
         $scope.labels = SharedData.getLabels();
         $scope.data = [];
         $scope.dataStolenPie = [];
-
-        $scope.data.push(SharedData.getYear2014());
-        $scope.data.push(SharedData.getYear2015());
         
-        $scope.dataStolenPie.push(SharedData.getStolen2014());
-        $scope.dataStolenPie.push(SharedData.getStolen2015());
+        var series = SharedData.getAvailableYears();
 
-        $scope.series = ['2014', '2015'];
+         // getNumYears should return the total number of years
+         for ( var i=0; i < SharedData.getAvailableYears().length; i++ ) {
+             
+            $scope.data.push(SharedData.getYearTow(series[i]));
+            $scope.dataStolenPie.push(SharedData.getYearStolen(series[i]));
+            
+         }
+
+        $scope.series = SharedData.getAvailableYears();
 
         $scope.onClick = function (points, evt) {
             console.log(points, evt);   
@@ -36,16 +43,17 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     	$scope.dataTotalsPie = {
     		
     		series: ['Sales', 'Income', 'Expense', 'Laptops', 'Keyboards'],
-    		
-    		data: [{
-    	          x: "2014 Total",
-    	          y: SharedData.getTotal2014()
-    	          //tooltip: "This is something"
-    	      },{
-    	          x: "2015 Total",
-    	          y: SharedData.getTotal2015()
-    	      }]
+            data: []
         };
+        
+        for( var i=0; i < SharedData.getAvailableYears().length; i++ ) {
+            
+            var tempJson = {
+                            x: SharedData.getAvailableYears()[i] + " Total",
+                            y: SharedData.getYearTotal(SharedData.getAvailableYears()[i])
+                           }
+            $scope.dataTotalsPie.data.push(tempJson);
+        }
     
         $scope.configTotalPaid = {
             title: "Average Dollar Amount Charged Per Tow",
@@ -59,119 +67,133 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
                 position: 'right'
             }
         };
-    
+    	
+        $scope.dataAverageCharge = [];
+        $scope.dataAverageCharge["series"] =  SharedData.getAvailableYears();
+        var dataVals = [];
     	
     	
-   $scope.dataAverageCharge = [];
-   $scope.dataAverageCharge["series"] =  ['2014', '2015'];
-   var dataVals = [];
-    	
-    	
-   $scope.configTotalPaid.title = "Monthly Tow Charge Average (Dollars)";
-    		
-   for( var i=0; i<SharedData.getAveragePaid2014().length; i++ ){
-        		
-   		var yArray = [];
-        yArray.push(SharedData.getAveragePaid2014()[i]);
-        yArray.push(SharedData.getAveragePaid2015()[i]);
-       
-        //yArray.push(SharedData.getAveragePaid2014()[i]);
-        var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
-      
-        dataVals.push(jsonObj);
-        	
-   }
-    	
-    $scope.dataAverageCharge["data"] = dataVals;
+        $scope.configTotalPaid.title = "Monthly Tow Charge Average (Dollars)";
 
-    $scope.charts = [ '2014 Tows', '2015 Tows' ];
-    $scope.stolenCharts = ['2014 Stolen', '2015 Stolen'];
-        
-    // Set default value; Otherwise blank is shown
-    $scope.yearChart = '2014 Tows';
-    $scope.yearStolenChart = '2014 Stolen';
-    
-    // Force event listeners to fire
-    $scope.changeStolenPie();
-        
-        	$scope.data = [];
-    	$scope.data["series"] =  ['Vehicles Towed 2014', 'Vehicles Towed 2015'];
-    	var dataVals = [];
-    	
+
+        for( var i=0; i<MONTHS_IN_YEAR; i++ ){
+        		
+   	        var yArray = [];
             
-    		$scope.config.title = "Vehicles Towed: 2014 & 2015";
-    		
-    		for( var i=0; i<SharedData.getYear2014().length; i++ ){
-        		
-        		var yArray = [];
-        		yArray.push(SharedData.getYear2014()[i]);
-                yArray.push(SharedData.getYear2015()[i]);
-                
-        		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
+            for ( var k=0; k < SharedData.getAvailableYears().length; k++ ){
+                yArray.push(SharedData.getYearAveragePaid(SharedData.getAvailableYears()[k])[i]);
+            }
+       
+            var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
       
-        		dataVals.push(jsonObj);
-        	}
-
-    	$scope.data["data"] = dataVals;
+            dataVals.push(jsonObj);
+        	
+        }
     	
-    $scope.drawCharts = true;
+        $scope.dataAverageCharge["data"] = dataVals;
+        
+        $scope.data = [];
+        $scope.data["series"] = [];
+        $scope.stolenCharts = [];
+        $scope.charts = [];
+        
+        var yearStr = SharedData.getAvailableYears();
+        
+        for( var i=0; i<yearStr.length; i++ ) {
+            $scope.charts.push(yearStr[i] + ' Tows');
+            $scope.stolenCharts.push(yearStr[i] + ' Stolen');
+            $scope.data["series"].push('Vehicles Towed ' + yearStr[i])
+        }
+        
+        // Set default value; Otherwise blank is shown
+        $scope.yearChart = yearStr[0] + ' Tows';
+        $scope.yearStolenChart = yearStr[0] + ' Stolen';
+    
+        // Force event listeners to fire
+        $scope.changeStolenPie();
+        
+        var dataVals = [];
+    	
+        $scope.config.title = "Vehicles Towed: " + SharedData.getDisplayString();
+    		
+        for( var i=0; i<MONTHS_IN_YEAR; i++ ){
+        		
+            var yArray = [];
+            for ( var k=0; k < SharedData.getAvailableYears().length; k++ ){
+                yArray.push(SharedData.getYearTow(SharedData.getAvailableYears()[k])[i]);
+            }
+
+            var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
+      
+            dataVals.push(jsonObj);
+        }
+
+        $scope.data["data"] = dataVals;
+        
+        $scope.drawCharts = true;
+    
     });
     
     $scope.doWork = function() {
         
+        ChartServices.getAvailableYears()
+            .success(function(data) {
+                SharedData.setAvailableYears(data); 
+            }).error(function(err) { 
+                console.log(err);
+        });
+        
     	ChartServices.getMonthlyTows().success(function(data) { 
 	    		
-				var series2014 = [];
-	    		var series2015 = [];
+            
+            var yearArray = SharedData.getAvailableYears();
+            
+                var allSeries = {};
 	    		var labels = [];
-	    		var averagePaid2014 = [];
-	    		var averagePaid2015 = [];
-                var stolen2014 = [];
-                var stolen2015 = [];
+                var allAveragePaid = {};
+                var allStolen = {};
+            
+                for ( var i=0; i < yearArray.length; i++ ) {
+                    allSeries[yearArray[i]] = [];
+                    allAveragePaid[yearArray[i]] = [];
+                    allStolen[yearArray[i]] = [];
+                }
 	    		
+                for( var i=0; i < yearArray.length; i++ ) {
+                    
+//	               angular.forEach(data[yearArray[i]], function(value, key) {
+//	                   this.push(key);
+//	               }, labels);
+                   
+                   angular.forEach(data[yearArray[i]], function(value, key) {
+	                   this.push(value);
+	               }, allSeries[yearArray[i]]);
+                    
+                   angular.forEach(data[yearArray[i] + 'Paid'], function(value, key) {
+	                   this.push(value);
+	    		   }, allAveragePaid[yearArray[i]]);
+                    
+                   angular.forEach(data[yearArray[i] + 'Stolen'], function(value, key) {
+	                   this.push(value);
+	    		   }, allStolen[yearArray[i]]);
+                    
+                }
 	    		      
-	    		angular.forEach(data['2014'], function(value, key) {
-	    			  this.push(key);
-	    			}, labels);
-	    		
-	    		angular.forEach(data['2014'], function(value, key) {
-	    			this.push(value);
-	    		}, series2014);
-	    		
-	    		angular.forEach(data['2015'], function(value, key) {
-	    			this.push(value);
-	    		}, series2015);
-	    		
-	    		angular.forEach(data['2014Paid'], function(value, key) {
-	    			this.push(value);
-	    		}, averagePaid2014);
-	    		
-	    		angular.forEach(data['2015Paid'], function(value, key) {
-	    			this.push(value);
-	    		}, averagePaid2015);
-            
-                angular.forEach(data['2014Stolen'], function(value, key) {
-	    			this.push(value);
-	    		}, stolen2014);
-            
-                angular.forEach(data['2015Stolen'], function(value, key) {
-	    			this.push(value);
-	    		}, stolen2015);
-	    		
-	    		
-	    		SharedData.setYear2014(series2014);
-	    		SharedData.setYear2015(series2015);
-	    		
-	    		SharedData.addTotal2014(data["2014Total"]);
-	    		SharedData.addTotal2015(data["2015Total"]);
+	    		angular.forEach(data[SharedData.getAvailableYears()[0]], function(value, key) {
+	               this.push(key);
+	            }, labels);
+
+	    		for( var i=0; i < yearArray.length; i++ ) {
+                    
+                    SharedData.setYearTow(yearArray[i], allSeries[yearArray[i]]);
+                    SharedData.setYearTotal(yearArray[i], data[yearArray[i] + 'Total']);
+                    
+                    SharedData.setYearAveragePaid(yearArray[i], allAveragePaid[yearArray[i]]);
+                    
+                    SharedData.setYearStolen(yearArray[i], allStolen[yearArray[i]]);
+                }	
 	    		
 	    		SharedData.setLabels(labels);
-	    		
-	    		SharedData.setAveragePaid2014(averagePaid2014);
-	    		SharedData.setAveragePaid2015(averagePaid2015);
-            
-                SharedData.setStolen2014(stolen2014);
-                SharedData.setStolen2015(stolen2015);
             
 	    		SharedData.setDataReady(true);
 	    		
@@ -180,16 +202,14 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
 	    	}).error(function(status, data) {
 	    		
 	    		return status;
-	    	});
-	    
-		
+	    	});		
     }
     
     $scope.vehicles = ['Lincoln', 'Ford'];
     
 
     $scope.config = {
-            title: "Vehicles Towed: 2014",
+            title: "Vehicles Towed",
             tooltips: true,
             labels: true,
             mouseover: function() {},
@@ -202,7 +222,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
         };
     
     $scope.configTotalsPie = {
-        title: "Total Vehicles Towed: 2014 & 2015",
+        title: "Total Vehicles Towed: " + SharedData.getDisplayString(),
         tooltips: true,
         labels: true,
         mouseover: function() {},
@@ -217,7 +237,7 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     };
                                                                             
     $scope.configStolenPie = {
-        title: "Stolen Vehicles Towed by Month: 2014 & 2015",
+        title: "Stolen Vehicles Towed by Month: " + SharedData.getDisplayString(),
         tooltips: true,
         labels: false,
         mouseover: function() {},
@@ -284,15 +304,17 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
                 $scope.configVehicleSearch.title = "Bad search type request";
             }
             
-			$scope.dataVehicleSearch['series'] = ['2014', '2015'];
-			
+			$scope.dataVehicleSearch['series'] = SharedData.getAvailableYears();
+            
 			var dataVals = [];
 
-			for( var i=0; i<data["2014"].length; i++ ){
-        		
+			for( var i=0; i < MONTHS_IN_YEAR; i++ ){
+        
         		var yArray = [];
-        		yArray.push(data["2014"][i]);
-        		yArray.push(data["2015"][i]);
+                
+                for( var k=0; k < SharedData.getAvailableYears().length; k++ ) {
+                    yArray.push(data[SharedData.getAvailableYears()[k]][i]);
+                }
         		
         		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
       
@@ -312,33 +334,24 @@ angular.module('mainApp.chartControllers', []).controller('chartCtrl', ['$scope'
     	$scope.dataStolenPie = [];
     	$scope.dataStolenPie["series"] =  ['Vehicles Stolen'];
     	var dataVals = [];
-    	
-    	if ( $scope.yearStolenChart === '2014 Stolen' ) {
+        
+        var availYears = SharedData.getAvailableYears();
+        
+        for( var k=0; k < availYears.length; k++ ) {
+            if ( $scope.yearStolenChart === availYears[k] + ' Stolen' ) {
             
-    		$scope.configStolenPie.title = "Vehicles Stolen: 2014";
+    		  $scope.configStolenPie.title = "Vehicles Stolen: " + availYears[k];
     		
-    		for( var i=0; i<SharedData.getStolen2014().length; i++ ){
+    		  for( var i=0; i<SharedData.getYearStolen(availYears[k]).length; i++ ){
         		
-        		var yArray = [];
-        		yArray.push(SharedData.getStolen2014()[i]);
+                var yArray = [];
+        		yArray.push(SharedData.getYearStolen(availYears[k])[i]);
         		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
                 
         		dataVals.push(jsonObj);
-        	}
-    	}
-    	else if( $scope.yearStolenChart === '2015 Stolen' ){
-            
-    		$scope.configStolenPie.title = "Vehicles Stolen: 2015";
-    		
-    		for( var i=0; i<SharedData.getStolen2015().length; i++ ){
-        		
-        		var yArray = [];
-        		yArray.push(SharedData.getStolen2015()[i]);
-        		var jsonObj = ({ x: SharedData.getLabels()[i], y: yArray });
-      
-        		dataVals.push(jsonObj);
-        	}
-    	}
+              }
+    	   }
+        }
         
     	$scope.dataStolenPie["data"] = dataVals;
     }
